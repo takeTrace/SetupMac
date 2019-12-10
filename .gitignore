@@ -1,0 +1,21 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+# Thumbnails
+._*
+id_rsa
+node_modules/
+mackup/
+homedir/.vim/backup/*
+!homedir/.vim/backup/.gitignore
+homedir/.vim/temp/*
+!homedir/.vim/temp/.gitignore
+homedir/.vim/.netrwhist
+homedir/.vim/bundle/*
+!homedir/.vim/bundle/.gitignore
+!homedir/.vim/bundle/Vundle.vim
+
+.My*/
+网易云音乐/
+iTunes/
+Projects/
