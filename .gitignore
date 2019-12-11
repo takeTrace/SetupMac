@@ -19,3 +19,5 @@ homedir/.vim/bundle/*
 网易云音乐/
 iTunes/
 Projects/
+*._gs
+*.gsl
