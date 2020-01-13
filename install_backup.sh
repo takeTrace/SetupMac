@@ -1,35 +1,28 @@
 #!/usr/bin/env bash
 
 ###########################
-# This script  runs all other system configuration scripts
-# @author takeTrace
-# @Email takeTrace00@gmail.com
-# originalRepo: see README.md
-# description: configure my mac & learn shell(at least boot up install new mac & backup) from this repo, thx a lot. think to @Adam Eivy's dotFiles: https://github.com/atomantic/dotfiles
+# this file is backup for ./install.sh  ##################
+# This script installs the dotfiles and runs all other system configuration scripts
+# @author Adam Eivy
 ###########################
 
 # include my library helpers for colorized echo and require_brew, etc
-# 引进 helper 便捷函数
 source ./lib_sh/echos.sh
 source ./lib_sh/requirers.sh
 
 bot "Hi! I'm going to install tooling and tweak your system settings. Here I go..."
 
 # Ask for the administrator password upfront
-# 获取超级管理员权限
-if ! sudo grep -q "%wheel		ALL=(ALL) NOPASSWD: ALL #atomantic/dotfiles" "/etc/sudoers"; then
+# if ! sudo grep -q "%wheel		ALL=(ALL) NOPASSWD: ALL #atomantic/dotfiles" "/etc/sudoers"; then
 
-  # Ask for the administrator password upfront
-  bot "I need you to enter your sudo password so I can install some things:"
-  bot "需要 super 权限来安装些东西:"
-  sudo -v
+#   # Ask for the administrator password upfront
+#   bot "I need you to enter your sudo password so I can install some things:"
+#   sudo -v
 
-  # Keep-alive: update existing sudo time stamp until the script has finished
-  # 保持 sudo 直到脚本结束
-  while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+#   # Keep-alive: update existing sudo time stamp until the script has finished
+#   while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
-  bot "Do you want me to setup this machine to allow you to run sudo without a password?\nPlease read here to see what I am doing:\nhttp://wiki.summercode.com/sudo_without_a_password_in_mac_os_x \n"
-  bot "需要运行 sudo 而不需要管理员权限密码吗? \n(按照安全考虑, 不建议, 我也不会这么干, 所以默认No了, 风险太大)\n"
+#   bot "Do you want me to setup this machine to allow you to run sudo without a password?\nPlease read here to see what I am doing:\nhttp://wiki.summercode.com/sudo_without_a_password_in_mac_os_x \n"
 
 #   read -r -p "Make sudo passwordless? [y|N] " response
 
@@ -41,19 +34,19 @@ if ! sudo grep -q "%wheel		ALL=(ALL) NOPASSWD: ALL #atomantic/dotfiles" "/etc/su
 #   fi
 # fi
 
-# 重写 host (这个不需要了, host 已经使用switchHosts(https://github.com/oldj/SwitchHosts) 管理)
+# 重写 host
 #
 bot "友情提示, 先安装 XCode, 然后选择sudo xcode-select --switch /Applications/Xcode.app"
-bot "然后安装 Apple 开发工具链: xcode-select --install"
+bot "然后安装 Apple 开发工具练: xcode-select --install"
 bot "重写 host ---"
 # /etc/hosts
 read -r -p "Overwrite /etc/hosts with the ad-blocking hosts file from someonewhocares.org? (from ./configs/hosts file) [y|N] " response
 if [[ $response =~ (yes|y|Y) ]];then
     action "cp /etc/hosts /etc/hosts.backup"
-    # sudo cp /etc/hosts /etc/hosts.backup
+    sudo cp /etc/hosts /etc/hosts.backup
     ok
     action "cp ./configs/hosts /etc/hosts"
-    # sudo cp ./configs/hosts /etc/hosts
+    sudo cp ./configs/hosts /etc/hosts
     ok
     bot "Your /etc/hosts file has been updated. Last version is saved in /etc/hosts.backup"
 fi
@@ -169,7 +162,6 @@ if [[ $? != 0 ]]; then
 else
   ok
   # Make sure we’re using the latest Homebrew
-  # 没有翻墙的情况下, 还是算了
   # running "updating homebrew"
   # brew update
   # ok
@@ -1148,12 +1140,7 @@ done
 
 bot "Woot! All done. Kill this terminal and launch iTerm"
 
-# 下面是当初始化完成后需要自己设置对的软件和配置
-
-# mackup restore
-
 # warning:
 brew bundle --verbose
 
-# 微信小助手安装:  安装工具: https://github.com/lmk123/oh-my-wechat 小助手: https://github.com/MustangYM/WeChatExtension-ForMac
-# curl -o- -L https://raw.githubusercontent.com/lmk123/oh-my-wechat/master/install.sh | bash -s
+
