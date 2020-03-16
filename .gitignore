@@ -22,3 +22,6 @@ Projects/
 *._gs
 *.gsl
 _gsdata_/
+
+ignore Private files(note: the files end .private)
+*.private

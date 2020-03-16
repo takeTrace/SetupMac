@@ -16,7 +16,7 @@ source ./lib_sh/requirers.sh
 bot "Hi! I'm going to install tooling and tweak your system settings. Here I go..."
 
 # Ask for the administrator password upfront
-# 获取超级管理员权限
+bot "获取超级管理员权限"
 if ! sudo grep -q "%wheel		ALL=(ALL) NOPASSWD: ALL #atomantic/dotfiles" "/etc/sudoers"; then
 
   # Ask for the administrator password upfront
@@ -25,44 +25,35 @@ if ! sudo grep -q "%wheel		ALL=(ALL) NOPASSWD: ALL #atomantic/dotfiles" "/etc/su
   sudo -v
 
   # Keep-alive: update existing sudo time stamp until the script has finished
-  # 保持 sudo 直到脚本结束
+  bot "保持 sudo 直到脚本结束"
   while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
-  bot "Do you want me to setup this machine to allow you to run sudo without a password?\nPlease read here to see what I am doing:\nhttp://wiki.summercode.com/sudo_without_a_password_in_mac_os_x \n"
-  bot "需要运行 sudo 而不需要管理员权限密码吗? \n(按照安全考虑, 不建议, 我也不会这么干, 所以默认No了, 风险太大)\n"
+  # bot "Do you want me to setup this machine to allow you to run sudo without a password?\nPlease read here to see what I am doing:\nhttp://wiki.summercode.com/sudo_without_a_password_in_mac_os_x \n"
+  # bot "需要运行 sudo 而不需要管理员权限密码吗? \n(按照安全考虑, 不建议, 我也不会这么干, 所以默认No了, 风险太大)\n"
+fi
+# --------------------------------- 重写 hosts ---------------------------------
 
-#   read -r -p "Make sudo passwordless? [y|N] " response
-
-#   if [[ $response =~ (yes|y|Y) ]];then
-#       sudo cp /etc/sudoers /etc/sudoers.back
-#       echo '%wheel		ALL=(ALL) NOPASSWD: ALL #atomantic/dotfiles' | sudo tee -a /etc/sudoers > /dev/null
-#       sudo dscl . append /Groups/wheel GroupMembership $(whoami)
-#       bot "You can now run sudo commands without password!"
-#   fi
-# fi
-
-# 重写 host (这个不需要了, host 已经使用switchHosts(https://github.com/oldj/SwitchHosts) 管理)
-#
-bot "友情提示, 先安装 XCode, 然后选择sudo xcode-select --switch /Applications/Xcode.app"
-bot "然后安装 Apple 开发工具链: xcode-select --install"
 bot "重写 host ---"
 # /etc/hosts
-read -r -p "Overwrite /etc/hosts with the ad-blocking hosts file from someonewhocares.org? (from ./configs/hosts file) [y|N] " response
+read -r -p "Overwrite /etc/hosts with the ad-blocking hosts file from someonewhocares.org? (from ./configs/hosts file) 重写 host? [y|N] " response
 if [[ $response =~ (yes|y|Y) ]];then
     action "cp /etc/hosts /etc/hosts.backup"
-    # sudo cp /etc/hosts /etc/hosts.backup
     ok
     action "cp ./configs/hosts /etc/hosts"
-    # sudo cp ./configs/hosts /etc/hosts
     ok
     bot "Your /etc/hosts file has been updated. Last version is saved in /etc/hosts.backup"
+    bot "hosts 文件已经更新, 原host文件保存在 /etc/hosts.backup"
 fi
+
+
+# --------------------------------- Git Config ---------------------------------
 
 bot "初始化全局 GitConfig ---"
 
 grep 'user = GITHUBUSER' ./homedir/.gitconfig > /dev/null 2>&1
 if [[ $? = 0 ]]; then
-    read -r -p "What is your github.com username? " githubuser
+    bot "设置 git 的用户名"
+    read -r -p "设置 git 的用户名 username? " githubuser
 
   fullname=`osascript -e "long user name of (system info)"`
 
@@ -82,6 +73,7 @@ if [[ $? = 0 ]]; then
   if [[ ! "$firstname" ]];then
     response='n'
   else
+    echo -e "按机器设置的名字来说, 全名是 $COL_YELLOW$firstname $lastname$COL_RESET, 对吗?"
     echo -e "I see that your full name is $COL_YELLOW$firstname $lastname$COL_RESET"
     read -r -p "Is this correct? [Y|n] " response
   fi
@@ -112,7 +104,7 @@ if [[ $? = 0 ]]; then
 
   running "replacing items in .gitconfig with your info ($COL_YELLOW$fullname, $email, $githubuser$COL_RESET)"
 
-  # test if gnu-sed or MacOS sed
+  # ------------------------- test if gnu-sed or MacOS sed  -------------------------
 
   sed -i "s/GITHUBFULLNAME/$firstname $lastname/" ./homedir/.gitconfig > /dev/null 2>&1 | true
   if [[ ${PIPESTATUS[0]} != 0 ]]; then
@@ -130,6 +122,7 @@ if [[ $? = 0 ]]; then
   fi
 fi
 
+# ------------------------- 换壁纸 -------------------------
 MD5_NEWWP=$(md5 img/wallpaper.jpg | awk '{print $4}')
 MD5_OLDWP=$(md5 /System/Library/CoreServices/DefaultDesktop.jpg | awk '{print $4}')
 if [[ "$MD5_NEWWP" != "$MD5_OLDWP" ]]; then
@@ -139,18 +132,63 @@ if [[ "$MD5_NEWWP" != "$MD5_OLDWP" ]]; then
     ok
   else
     running "Set a custom wallpaper image"
+    # fixme: Catalina 初始化的系统找不到这些图片
     # `DefaultDesktop.jpg` is already a symlink, and
-    # all wallpapers are in `/Library/Desktop Pictures/`. The default is `Wave.jpg`.
     rm -rf ~/Library/Application Support/Dock/desktoppicture.db
     sudo rm -f /System/Library/CoreServices/DefaultDesktop.jpg > /dev/null 2>&1
-    sudo rm -f /Library/Desktop\ Pictures/El\ Capitan.jpg > /dev/null 2>&1
-    sudo rm -f /Library/Desktop\ Pictures/Sierra.jpg > /dev/null 2>&1
-    sudo rm -f /Library/Desktop\ Pictures/Sierra\ 2.jpg > /dev/null 2>&1
+    sudo rm -f /Library/Desktop\ Pictures/*.jpg > /dev/null 2>&1
     sudo cp ./img/wallpaper.jpg /System/Library/CoreServices/DefaultDesktop.jpg;
-    sudo cp ./img/wallpaper.jpg /Library/Desktop\ Pictures/Sierra.jpg;
-    sudo cp ./img/wallpaper.jpg /Library/Desktop\ Pictures/Sierra\ 2.jpg;
-    sudo cp ./img/wallpaper.jpg /Library/Desktop\ Pictures/El\ Capitan.jpg;ok
+    sudo cp ./img/wallpaper.jpg /Library/Desktop\ Pictures/Mojave\ Night.jpg;
+    sudo cp ./img/wallpaper.jpg /Library/Desktop\ Pictures/Mojave\ Day.jpg;ok
   fi
+fi
+
+# -------------------------- 配置 SSR 翻墙 -------------------------------
+bot "现在来配置翻墙先..."
+if [ -d "/Applications/ShadowsocksX-NG.app"]; then
+  running "打开 ss 配置翻墙?"
+  open /Applications/ShadowsocksX-NG.app
+else
+  bot "复制 ShadowsocksX-NG-R -> Applications"
+  sudo cp -r ./AppsForInitialMacOS/ShadowsocksX-NG-R.app /Applications;ok
+  bot "打开 SSR 进行配置"
+  open /Applications/ShadowsocksX-NG.app
+fi
+bot "打开订阅地址, 复制下面的地址到 SSR 中更新服务器并打开代理";
+cat ./AppsForInitialMacOS/ssrSubscribe
+read -r -p "完成了就直接回车" response
+
+# -------------------------- 配置请求转发到代理端口 --------------------------
+# 经由 ssr:1086 转发请求来翻墙, 可以加快 brew 的安装和下载. (brew 会使用ALL_PROXY走代理)
+export ALL_PROXY=socks5://127.0.0.1:1086
+
+
+# ###########################################################
+# Install non-brew various tools (PRE-BREW Installs)
+# 安装 Xcode CLT 工具
+# ###########################################################
+
+bot "ensuring build/install tools are available"
+if ! xcode-select --print-path &> /dev/null; then
+
+    # Prompt user to install the XCode Command Line Tools
+    xcode-select --install &> /dev/null
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    # Wait until the XCode Command Line Tools are installed
+    until xcode-select --print-path &> /dev/null; do
+        sleep 5
+    done
+
+    print_result $? ' XCode Command Line Tools Installed'
+
+    # Prompt user to agree to the terms of the Xcode license
+    # https://github.com/alrra/dotfiles/issues/10
+
+    sudo xcodebuild -license
+    print_result $? 'Agree with the XCode Command Line Tools licence'
+
 fi
 
 #####
@@ -169,7 +207,7 @@ if [[ $? != 0 ]]; then
 else
   ok
   # Make sure we’re using the latest Homebrew
-  # 没有翻墙的情况下, 还是算了
+  # 新装电脑刚下的 brew, 这个就不必了....
   # running "updating homebrew"
   # brew update
   # ok
@@ -186,81 +224,70 @@ else
 fi
 
 #####
-# install brew cask (UI Packages)
+# install brew cask (UI Packages) 新版本的 brew 默认就包含安装了 cask
 #####
-running "checking brew-cask install"
-output=$(brew tap | grep cask)
-if [[ $? != 0 ]]; then
-  action "installing brew-cask"
-  require_brew caskroom/cask/brew-cask
-fi
-brew tap caskroom/versions > /dev/null 2>&1
+# running "checking brew-cask install"
+# output=$(brew tap | grep cask)
+# if [[ $? != 0 ]]; then
+#   action "installing brew-cask"
+#   require_brew caskroom/cask/brew-cask
+# fi
+# brew tap caskroom/versions > /dev/null 2>&1
+# ok
+
+# Just to avoid a potential bug
+mkdir -p ~/Library/Caches/Homebrew/Formula
+brew doctor
+
+
+# -------------------------------- 终端翻墙 --------------------------------
+bot "安装终端代理"
+running "install privoxy..."
+required_brew privoxy
+ok
+running "config privoxy..."
+echo "listen-address 0.0.0.0:8118" >> /usr/local/etc/privoxy/config
+echo "forward-socks5 / localhost:1086 ." >> /usr/local/etc/privoxy/config
+export no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com";
+export http_proxy="http://127.0.0.1:8118";
+export https_proxy=$http_proxy;
+echo -e "已配置代理";
+ok
+running "start server..."
+sudo /usr/local/sbin/privoxy /usr/local/etc/privoxy/config
+#  通过统一使终端翻墙后, 不再需要单独在 gitconfig 里配置代理. GUI 上也有小飞机翻墙了.
+# git config --global http.proxy socks5://127.0.0.1:1086
+# git config --global http.https://github.com.proxy socks5://127.0.0.1:1086
+ok
+echo -e "已开启代理"
+echo netstat -na | grep 8118
+ok
 ok
 
-
-
-#####
-# 终端翻墙
-#####
-#
-bot "现在来配置翻墙先..."
-if [ -d "/Applications/ShadowsocksX-NG.app"]; then
-  running "打开 ss 配置翻墙?"
-  /Applications/ShadowsocksX-NG.app
-else
-  require_cask shadowsocksx-ng
-  running "打开 ss 配置翻墙?"
-  /Applications/ShadowsocksX-NG.app
-fi
-
-ok
-
-read -r -p "Config complete? " response
-if [[ $response =~ (yes|y|Y) ]];then
-    running "install privoxy..."
-    required_brew privoxy
-    ok
-    running "config privoxy..."
-    echo "listen-address 0.0.0.0:8118" >> /usr/local/etc/privoxy/config
-    echo "forward-socks5 / localhost:1086 ." >> /usr/local/etc/privoxy/config
-    source ./.exports
-    ok
-    running "start server..."
-    sudo /usr/local/sbin/privoxy /usr/local/etc/privoxy/config
-    git config --global http.proxy socks5://127.0.0.1:1086
-    git config --global http.https://github.com.proxy socks5://127.0.0.1:1086
-    ok
-    echo -e "已开启代理"
-    echo netstat -na | grep 8118
-    ok
-fi
-ok
-
+# ------------------------------ 配置 bash, 安装 git/zsh/ruby ------------------------------
 bot "config bash"
+# 配置 bash 颜色, exports, alias, functions,  等终端快捷行为
 running "config bash in bashconfig dir..."
 ./bashconfig/bootstrap.sh
 ok
 
-
-
-
 # skip those GUI clients, git command-line all the way
-# require_brew git
+running "Intall Git..."
+require_brew git
 # need fontconfig to install/build fonts
 # require_brew fontconfig
 # update zsh to latest
-running "Intall Oh My Zsh..."
+running "Intall Zsh..."
 require_brew zsh
 ok
 
 # update ruby to latest
-# use versions of packages installed with homebrew
-# RUBY_CONFIGURE_OPTS="--with-openssl-dir=`brew --prefix openssl` --with-readline-dir=`brew --prefix readline` --with-libyaml-dir=`brew --prefix libyaml`"
-# require_brew ruby
+bot "use versions of packages installed with homebrew"
+RUBY_CONFIGURE_OPTS="--with-openssl-dir=`brew --prefix openssl` --with-readline-dir=`brew --prefix readline` --with-libyaml-dir=`brew --prefix libyaml`"
+running "Intall Ruby..."
+require_brew ruby
 # set zsh as the user login shell
 CURRENTSHELL=$(dscl . -read /Users/$USER UserShell | awk '{print $2}')
-#
-#
 ok
 
 if [[ "$CURRENTSHELL" != "/usr/local/bin/zsh" ]]; then
@@ -271,9 +298,9 @@ if [[ "$CURRENTSHELL" != "/usr/local/bin/zsh" ]]; then
   ok
 fi
 
-# running "Intall Oh My Zsh..."
-# sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-# ok
+running "Intall Oh My Zsh..."
+sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+ok
 
 if [[ ! -d "./oh-my-zsh/custom/themes/powerlevel9k" ]]; then
   git clone https://github.com/bhilburn/powerlevel9k.git oh-my-zsh/custom/themes/powerlevel9k
@@ -353,23 +380,22 @@ bot "installing packages from config.js..."
 node index.js
 ok
 
-bot "Now checking Brewfile for brew install..."
-if [ -e "~/Brewfile"]; then
-  running "Use Brewfile"
-  brew bundle
-  ok
-else
-  bot "No Brewfile"
-fi
+#  上面的脚本里设置了必须装的, brewfile 不一定适合每个机器
+# bot "Now checking Brewfile for brew install..."
+# if [ -e "~/Brewfile"]; then
+#   read -r -p "发现有 brewfile, 编辑后直接回车使用 brewfile 安装 " response
+#   running "Use Brewfile"
+#   brew bundle
+#   ok
+# else
+#   bot "No Brewfile"
+# fi
 
 running "cleanup homebrew"
-brew cleanup > /dev/null 2>&1
+brew cleanup --force > /dev/null 2>&1
+rm -f -r /Library/Caches/Homebrew/* > /dev/null 2>&1
 ok
 
-
-#####################################
-# 检查 mackup 的位置, 将文件转移
-#####################################
 
 ###############################################################################
 bot "Configuring General System UI/UX..."
@@ -393,6 +419,7 @@ ok
 #   2 = on for essential services
 sudo defaults write /Library/Preferences/com.apple.alf globalstate -int 1
 
+# 防火墙
 # Enable firewall stealth mode (no response to ICMP / ping requests)
 # Source: https://support.apple.com/kb/PH18642
 #sudo defaults write /Library/Preferences/com.apple.alf stealthenabled -int 1
@@ -426,15 +453,19 @@ sudo defaults write /Library/Preferences/com.apple.alf stealthenabled -int 1
 # Disable wifi captive portal
 #sudo defaults write /Library/Preferences/SystemConfiguration/com.apple.captive.control Active -bool false
 
+# 禁用远程事件
 # Disable remote apple events
 sudo systemsetup -setremoteappleevents off
 
+# 禁用远程登录
 # Disable remote login
 sudo systemsetup -setremotelogin off
 
+#  禁用调制解调器唤醒设备
 # Disable wake-on modem
 sudo systemsetup -setwakeonmodem off
 
+# 禁用 LAN 唤醒设备
 # Disable wake-on LAN
 sudo systemsetup -setwakeonnetworkaccess off
 
@@ -448,6 +479,7 @@ sudo systemsetup -setwakeonnetworkaccess off
 # Do not show password hints
 #sudo defaults write /Library/Preferences/com.apple.loginwindow RetriesUntilHint -int 0
 
+# 禁用客户账号登录
 # Disable guest account login
 sudo defaults write /Library/Preferences/com.apple.loginwindow GuestEnabled -bool false
 
@@ -488,12 +520,14 @@ sudo defaults write /Library/Preferences/com.apple.loginwindow GuestEnabled -boo
 # SSD-specific tweaks                                                         #
 ###############################################################################
 
+# 禁用 本地磁盘 Time Machine 快照
 running "Disable local Time Machine snapshots"
 sudo tmutil disablelocal;ok
 
 # running "Disable hibernation (speeds up entering sleep mode)"
 # sudo pmset -a hibernatemode 0;ok
 
+# 删除睡眠镜像文件
 running "Remove the sleep image file to save disk space"
 sudo rm -rf /Private/var/vm/sleepimage;ok
 running "Create a zero-byte file instead"
@@ -501,6 +535,7 @@ sudo touch /Private/var/vm/sleepimage;ok
 running "…and make sure it can’t be rewritten"
 sudo chflags uchg /Private/var/vm/sleepimage;ok
 
+# 禁用摇晃感应器
 running "Disable the sudden motion sensor as it’s not useful for SSDs"
 sudo pmset -a sms 0;ok
 
@@ -547,6 +582,7 @@ sudo pmset -a sms 0;ok
 # running "Wipe all (default) app icons from the Dock"
 # # This is only really useful when setting up a new Mac, or if you don’t use
 # the Dock to launch apps.
+# 移除所有驻留 Dock 的 APP
 defaults write com.apple.dock persistent-apps -array "";ok
 
 # 设置桌面不显示"桌面文件夹"的东西
@@ -567,18 +603,22 @@ defaults write com.apple.dock persistent-apps -array "";ok
 ################################################
 bot "Standard System Changes"
 ################################################
+# 开机以详细模式启动
 running "always boot in verbose mode (not MacOS GUI mode)"
 sudo nvram boot-args="-v";ok
 
+# 允许 'locate' 命令
 running "allow 'locate' command"
 sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.locate.plist > /dev/null 2>&1;ok
 
 # running "Set standby delay to 24 hours (default is 1 hour)"
 # sudo pmset -a standbydelay 86400;ok
 
+# 禁用开机音效
 running "Disable the sound effects on boot"
 sudo nvram SystemAudioVolume=" ";ok
 
+# 禁用 menubar 透明
 running "Menu bar: disable transparency"
 defaults write NSGlobalDomain AppleEnableMenuBarTransparency -bool false;ok
 
@@ -598,7 +638,7 @@ ok
 
 # running "Set highlight color to green"
 # defaults write NSGlobalDomain AppleHighlightColor -string "0.764700 0.976500 0.568600";ok
-
+# 设置边栏图标大小为中等
 running "Set sidebar icon size to medium"
 defaults write NSGlobalDomain NSTableViewDefaultSizeMode -int 2;ok
 
@@ -606,9 +646,11 @@ defaults write NSGlobalDomain NSTableViewDefaultSizeMode -int 2;ok
 # defaults write NSGlobalDomain AppleShowScrollBars -string "Always";ok
 # Possible values: `WhenScrolling`, `Automatic` and `Always`
 
+# 加速窗口大小调整速度
 running "Increase window resize speed for Cocoa applications"
 defaults write NSGlobalDomain NSWindowResizeTime -float 0.005;ok
 
+# 将保存选项设置为默认
 running "Expand save panel by default"
 defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode -bool true
 defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true;ok
@@ -617,9 +659,11 @@ defaults write NSGlobalDomain NSNavPanelExpandedStateForSaveMode2 -bool true;ok
 # defaults write NSGlobalDomain PMPrintingExpandedStateForPrint -bool true
 # defaults write NSGlobalDomain PMPrintingExpandedStateForPrint2 -bool true;ok
 
+# 默认保存到磁盘(而非 iCloud)
 running "Save to disk (not to iCloud) by default"
 defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false;ok
 
+# 打印 job 完成后自动退出打印 APP
 running "Automatically quit printer app once the print jobs complete"
 defaults write com.apple.print.PrintingPrefs "Quit When Finished" -bool true;ok
 
@@ -639,6 +683,7 @@ defaults write com.apple.print.PrintingPrefs "Quit When Finished" -bool true;ok
 # running "Set Help Viewer windows to non-floating mode"
 # defaults write com.apple.helpviewer DevMode -bool true;ok
 
+# 在登录窗口点击时钟时显示IP, hostname, OS 等等
 running "Reveal IP, hostname, OS, etc. when clicking clock in login window"
 sudo defaults write /Library/Preferences/com.apple.loginwindow AdminHostInfo HostName;ok
 
@@ -654,9 +699,10 @@ sudo defaults write /Library/Preferences/com.apple.loginwindow AdminHostInfo Hos
 # running "Disable Notification Center and remove the menu bar icon"
 # launchctl unload -w /System/Library/LaunchAgents/com.apple.notificationcenterui.plist > /dev/null 2>&1;ok
 
+# 输入时禁用智能引号
 running "Disable smart quotes as they’re annoying when typing code"
 defaults write NSGlobalDomain NSAutomaticQuoteSubstitutionEnabled -bool false;ok
-
+# 输入时禁用 智能dash 号
 running "Disable smart dashes as they’re annoying when typing code"
 defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false;ok
 
@@ -665,6 +711,7 @@ defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false;ok
 bot "Trackpad, mouse, keyboard, Bluetooth accessories, and input"
 ###############################################################################
 
+# 触摸板: 登录面板和这个用户操作开启轻触点击
 running "Trackpad: enable tap to click for this user and for the login screen"
 defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
 defaults -currentHost write NSGlobalDomain com.apple.mouse.tapBehavior -int 1
@@ -679,25 +726,31 @@ defaults write NSGlobalDomain com.apple.mouse.tapBehavior -int 1;ok
 # running "Disable 'natural' (Lion-style) scrolling"
 # defaults write NSGlobalDomain com.apple.swipescrolldirection -bool false;ok
 
+# 增加蓝牙/耳机音质
 running "Increase sound quality for Bluetooth headphones/headsets"
 defaults write com.apple.BluetoothAudioAgent "Apple Bitpool Min (editable)" -int 40;ok
 
+# 开启全键盘访问控制
 running "Enable full keyboard access for all controls (e.g. enable Tab in modal dialogs)"
 defaults write NSGlobalDomain AppleKeyboardUIMode -int 3;ok
 
 # running "Use scroll gesture with the Ctrl (^) modifier key to zoom"
 # defaults write com.apple.universalaccess closeViewScrollWheelToggle -bool true
 # defaults write com.apple.universalaccess HIDScrollZoomModifierMask -int 262144;ok
+
+# 禁止缩放时键盘聚焦
 running "Follow the keyboard focus while zoomed in"
 defaults write com.apple.universalaccess closeViewZoomFollowsFocus -bool true;ok
 
+# 重复键入时禁止等待时间(加快按键速度)
 running "Disable press-and-hold for keys in favor of key repeat"
 defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false;ok
-
+# 加快重复按键速度
 running "Set a blazingly fast keyboard repeat rate"
 defaults write NSGlobalDomain KeyRepeat -int 2
 defaults write NSGlobalDomain InitialKeyRepeat -int 10;ok
 
+# 设置语言合文本格式
 running "Set language and text formats (english/US)"
 defaults write NSGlobalDomain AppleLanguages -array "en"
 defaults write NSGlobalDomain AppleLocale -string "en_US@currency=USD"
@@ -711,16 +764,20 @@ defaults write NSGlobalDomain AppleMetricUnits -bool true;ok
 bot "Configuring the Screen"
 ###############################################################################
 
+# 屏保后立即需要密码
 running "Require password immediately after sleep or screen saver begins"
 defaults write com.apple.screensaver askForPassword -int 1
 defaults write com.apple.screensaver askForPasswordDelay -int 0;ok
 
+# 保存截图在桌面
 running "Save screenshots to the desktop"
 defaults write com.apple.screencapture location -string "${HOME}/Desktop";ok
 
+# 保存截图为 png
 running "Save screenshots in PNG format (other options: BMP, GIF, JPG, PDF, TIFF)"
 defaults write com.apple.screencapture type -string "png";ok
 
+# 截图禁止阴影
 running "Disable shadow in screenshots"
 defaults write com.apple.screencapture disable-shadow -bool true;ok
 
@@ -893,9 +950,9 @@ bot "Configuring Hot Corners"
 # running "Top left screen corner → Mission Control"
 # defaults write com.apple.dock wvous-tl-corner -int 2
 # defaults write com.apple.dock wvous-tl-modifier -int 0;ok
-running "Top right screen corner → Desktop"
-defaults write com.apple.dock wvous-tr-corner -int 4
-defaults write com.apple.dock wvous-tr-modifier -int 0;ok
+# running "Top right screen corner → Desktop"
+# defaults write com.apple.dock wvous-tr-corner -int 4
+# defaults write com.apple.dock wvous-tr-modifier -int 0;ok
 running "Bottom right screen corner → Start screen saver"
 defaults write com.apple.dock wvous-br-corner -int 5
 defaults write com.apple.dock wvous-br-modifier -int 0;ok
@@ -1004,8 +1061,8 @@ sudo mdutil -i on / > /dev/null;ok
 bot "Terminal & iTerm2"
 ###############################################################################
 
-# running "Only use UTF-8 in Terminal.app"
-# defaults write com.apple.terminal StringEncodings -array 4;ok
+running "Only use UTF-8 in Terminal.app"
+defaults write com.apple.terminal StringEncodings -array 4;ok
 #
 # running "Use a modified version of the Solarized Dark theme by default in Terminal.app"
 # TERM_PROFILE='Solarized Dark xterm-256color';
@@ -1017,7 +1074,7 @@ bot "Terminal & iTerm2"
 # 	defaults write com.apple.terminal 'Startup Window Settings' -string "${TERM_PROFILE}";
 # fi;
 
-#running "Enable “focus follows mouse” for Terminal.app and all X11 apps"
+running "Enable “focus follows mouse” for Terminal.app and all X11 apps"
 # i.e. hover over a window and start `typing in it without clicking first
 defaults write com.apple.terminal FocusFollowsMouse -bool true
 #defaults write org.x.X11 wm_ffm -bool true;ok
@@ -1026,8 +1083,8 @@ defaults write com.apple.terminal FocusFollowsMouse -bool true
 # running "Installing the Patched Solarized Dark theme for iTerm (opening file)"
 # open "./configs/Solarized Dark Patch.itermcolors";ok
 
-# running "Don’t display the annoying prompt when quitting iTerm"
-# defaults write com.googlecode.iterm2 PromptOnQuit -bool false;ok
+running "Don’t display the annoying prompt when quitting iTerm"
+defaults write com.googlecode.iterm2 PromptOnQuit -bool false;ok
 # running "hide tab title bars"
 # defaults write com.googlecode.iterm2 HideTab -bool true;ok
 # running "set system-wide hotkey to show/hide iterm with ^\`"
@@ -1120,15 +1177,15 @@ defaults write com.apple.messageshelper.MessageController SOInputLineSettings -d
 running "Disable continuous spell checking"
 defaults write com.apple.messageshelper.MessageController SOInputLineSettings -dict-add "continuousSpellCheckingEnabled" -bool false;ok
 
-###############################################################################
-bot "SizeUp.app"
-###############################################################################
+# ###############################################################################
+# bot "SizeUp.app"
+# ###############################################################################
 
-running "Start SizeUp at login"
-defaults write com.irradiatedsoftware.SizeUp StartAtLogin -bool true;ok
+# running "Start SizeUp at login"
+# defaults write com.irradiatedsoftware.SizeUp StartAtLogin -bool true;ok
 
-running "Don’t show the preferences window on next start"
-defaults write com.irradiatedsoftware.SizeUp ShowPrefsOnNextStart -bool false;ok
+# running "Don’t show the preferences window on next start"
+# defaults write com.irradiatedsoftware.SizeUp ShowPrefsOnNextStart -bool false;ok
 
 killall cfprefsd
 
@@ -1150,10 +1207,20 @@ bot "Woot! All done. Kill this terminal and launch iTerm"
 
 # 下面是当初始化完成后需要自己设置对的软件和配置
 
-# mackup restore
+# ------------------ todo: mackup 安装恢复(不一定每台电脑都需要 mackup 里的东西, 低配的设备里可能就会是负担) ------------------
+#####################################
+# 检查 mackup 的位置, 将文件转移
+#####################################
+
 
 # warning:
-brew bundle --verbose
+# brew bundle --verbose
 
 # 微信小助手安装:  安装工具: https://github.com/lmk123/oh-my-wechat 小助手: https://github.com/MustangYM/WeChatExtension-ForMac
 # curl -o- -L https://raw.githubusercontent.com/lmk123/oh-my-wechat/master/install.sh | bash -s
+
+# mackup 恢复后, 添加对应的脚本, 如果软链后的(即原有备份的.dotfiles 有了就不需要重新写一次)
+# zshrc/bashrc 里有了就直接注释好了
+# 配置上面脚本安装程序后, 需要做的一些配置
+# Install GNU core utilities (those that come with macOS are outdated)
+# Don’t forget to add `$(brew --prefix coreutils)/libexec/gnubin` to `$PATH`.

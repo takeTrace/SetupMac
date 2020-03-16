@@ -17,3 +17,4 @@ mackup backup -f
 - keychains 备份
 - Chrome 插件 `Dark Reader` 配置备份: sync_storage_Dark Reader.json
 - conda env export -f ~/Backup/CondaEnv/环境名 -n 环境名
+
