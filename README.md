@@ -1,4 +1,8 @@
 # SetupMac
+Update: 
+this repo will Archive, because here need be sync with upsteam repo, so I make a Fork from that, and any change will be there since right now.
+And DELETE after sometimes, just backup in case of something I forget to move.
+
 set a new mac with my own habit setting.
 ## Before this repo
 
